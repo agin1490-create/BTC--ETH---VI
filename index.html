@@ -15,7 +15,7 @@
     .status{margin-top:0.5rem;padding:0.3rem 0.8rem;border-radius:20px;display:inline-block;font-size:0.8rem;font-weight:600}
     .status.connected{background:rgba(0,255,136,0.15);color:#00ff88}
     .status.disconnected{background:rgba(255,51,102,0.15);color:#ff3366}
-    .counter{font-size:0.75rem;color:#6b7280;margin-top:0.5rem}
+    .msg-count{font-size:0.7rem;color:#6b7280;margin-top:0.3rem}
     .card{background:#0a0f1c;border:1px solid #1e293b;border-radius:12px;padding:1rem;margin-bottom:1rem}
     .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem}
     .name{font-size:1.1rem;font-weight:700}
@@ -25,6 +25,12 @@
     .box{background:rgba(30,41,59,0.5);padding:0.6rem;border-radius:8px;text-align:center}
     .label{font-size:0.65rem;color:#6b7280;text-transform:uppercase;margin-bottom:0.2rem}
     .value{font-size:0.95rem;font-weight:700}
+    .rsi-zone{font-size:0.7rem;margin-top:0.2rem;font-weight:600}
+    .rsi-zone.oversold{color:#00ff88}
+    .rsi-zone.overbought{color:#ff3366}
+    .rsi-zone.neutral{color:#6b7280}
+    .vol-bar{height:4px;background:#1e293b;border-radius:2px;margin-top:0.3rem;overflow:hidden}
+    .vol-fill{height:100%;background:#00d4ff;transition:width 0.3s}
     .signal{margin-top:0.8rem;padding:0.9rem;border-radius:10px;text-align:center;font-weight:800;font-size:1rem;border:2px solid}
     .signal.buy{background:rgba(0,255,136,0.1);color:#00ff88;border-color:#00ff88}
     .signal.sell{background:rgba(255,51,102,0.1);color:#ff3366;border-color:#ff3366}
@@ -38,40 +44,48 @@
 <body>
   <div class="header">
     <div class="logo">⚡ CVD SCALPER PRO</div>
-    <div class="subtitle">Real-Time Trade Flow Analysis</div>
+    <div class="subtitle">CVD + VWAP + RSI + Volume Confluence</div>
     <div class="status disconnected" id="status">Connecting...</div>
-    <div class="counter" id="msg-counter">Messages: 0</div>
+    <div class="msg-count" id="msg-count">Messages: 0 | Candles: 0</div>
   </div>
-
   <div id="cards"></div>
 
   <div class="nav">
     <div class="nav-item active"><div class="nav-icon">📊</div>Signals</div>
-    <div class="nav-item"><div class="nav-icon">📝</div>Trades</div>    <div class="nav-item"><div class="nav-icon">📈</div>Stats</div>
+    <div class="nav-item"><div class="nav-icon">📝</div>Trades</div>
+    <div class="nav-item"><div class="nav-icon"></div>Stats</div>
   </div>
 
   <script>
     const CONFIG = {
       symbols: ['BTCUSDT', 'ETHUSDT'],
-      wsUrl: 'wss://stream.binance.com:9443/stream?streams=btcusdt@trade/ethusdt@trade'
+      wsUrl: 'wss://stream.binance.com:9443/stream?streams=btcusdt@trade/ethusdt@trade/btcusdt@kline_1m/ethusdt@kline_1m',
+      rsiPeriod: 14,
+      volPeriod: 20
     };
 
     let ws = null;
-    let msgCount = 0;
-    let data = {
-      'BTCUSDT': { price: 0, cvd: 0, trades: 0, vwap: 0, cumVP: 0, cumV: 0, score: 0, signal: 'NEUTRAL' },
-      'ETHUSDT': { price: 0, cvd: 0, trades: 0, vwap: 0, cumVP: 0, cumV: 0, score: 0, signal: 'NEUTRAL' }
-    };
+    let msgCount = 0, candleCount = 0;
+    let data = {};
+
+    // Initialize data structure
+    CONFIG.symbols.forEach(sym => {
+      data[sym] = {
+        price: 0, cvd: 0, trades: 0, vwap: 0, cumVP: 0, cumV: 0,
+        closes: [], volumes: [], 
+        rsi: 50, volAvg: 0, volRatio: 1,
+        score: 0, signal: 'NEUTRAL'
+      };
+    });
 
     function connect() {
       const status = document.getElementById('status');
       status.textContent = 'Connecting...';
-      
       console.log('Connecting to:', CONFIG.wsUrl);
+      
       ws = new WebSocket(CONFIG.wsUrl);
 
       ws.onopen = () => {
-        console.log('WebSocket Connected');
         status.textContent = '● LIVE';
         status.className = 'status connected';
         fetchPrices();
@@ -80,23 +94,18 @@
       ws.onmessage = (event) => {
         try {
           const raw = JSON.parse(event.data);
-          console.log('Raw Message:', raw); // Debug log
+          msgCount++;
           
-          // Binance combined stream format: { stream: "btcusdt@trade", data: { ... } }
-          if (raw.stream && raw.data) {
-            handleTrade(raw.data);
-          } 
-          // Direct stream format (fallback)
-          else if (raw.e === 'trade') {
-            handleTrade(raw);
+          if (raw.stream && raw.data) {            if (raw.stream.includes('@trade')) handleTrade(raw.data);
+            else if (raw.stream.includes('@kline')) handleKline(raw.data);
           }
-        } catch (e) {
-          console.error('Parse error:', e);
-        }
+          
+          document.getElementById('msg-count').textContent = `Messages: ${msgCount} | Candles: ${candleCount}`;
+        } catch (e) { console.error('Parse error:', e); }
       };
 
-      ws.onerror = (err) => {
-        console.error('WS Error:', err);        status.textContent = '● ERROR';
+      ws.onerror = () => {
+        status.textContent = '● ERROR';
         status.className = 'status disconnected';
       };
 
@@ -108,64 +117,164 @@
     }
 
     function handleTrade(t) {
-      const symbol = t.s; // e.g., "BTCUSDT"
+      const symbol = t.s;
       if (!data[symbol]) return;
 
       const price = parseFloat(t.p);
       const qty = parseFloat(t.q);
-      const isBuyerMaker = t.m; // true = seller initiated, false = buyer initiated
+      const isBuyerMaker = t.m;
 
-      // Update Data
       data[symbol].price = price;
       data[symbol].trades++;
-      msgCount++;
-      
-      // CVD: If buyer is maker (t.m=true), it's a sell order hitting the book -> Negative CVD
-      // If buyer is NOT maker (t.m=false), it's a buy order hitting the book -> Positive CVD
       data[symbol].cvd += isBuyerMaker ? -qty : qty;
-      
-      // VWAP
       data[symbol].cumVP += price * qty;
       data[symbol].cumV += qty;
       data[symbol].vwap = data[symbol].cumV > 0 ? data[symbol].cumVP / data[symbol].cumV : price;
 
-      // Simple Signal Logic
-      const score = (data[symbol].cvd > 0 ? 1 : -1) + (price > data[symbol].vwap ? 1 : -1);
-      data[symbol].score = score;
-      data[symbol].signal = score >= 2 ? 'BUY' : score <= -2 ? 'SELL' : 'NEUTRAL';
-
-      // Update UI
-      document.getElementById('msg-counter').textContent = `Messages: ${msgCount}`;
+      updateSignal(symbol);
       render();
+    }
+
+    function handleKline(k) {
+      const symbol = k.s;
+      if (!data[symbol] || !k.x) return; // k.x = true means candle closed
+
+      candleCount++;
+      const close = parseFloat(k.c);
+      const vol = parseFloat(k.v);
+
+      data[symbol].closes.push(close);
+      data[symbol].volumes.push(vol);
+      // Keep last 50 candles for performance
+      if (data[symbol].closes.length > 50) {
+        data[symbol].closes.shift();
+        data[symbol].volumes.shift();
+      }
+
+      // Calculate indicators on candle close
+      calculateRSI(symbol);
+      calculateVolume(symbol);
+      updateSignal(symbol);
+      render();
+    }
+
+    function calculateRSI(sym) {
+      const d = data[sym];
+      const closes = d.closes;
+      const period = CONFIG.rsiPeriod;
+      
+      if (closes.length < period + 1) { d.rsi = 50; return; }
+
+      let gains = 0, losses = 0;
+      for (let i = 1; i <= period; i++) {
+        const diff = closes[closes.length - i] - closes[closes.length - i - 1];
+        diff >= 0 ? gains += diff : losses -= diff;
+      }
+      
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+      
+      for (let i = period + 1; i < closes.length; i++) {
+        const diff = closes[i] - closes[i-1];
+        avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
+        avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+      }
+      
+      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      d.rsi = 100 - (100 / (1 + rs));
+    }
+
+    function calculateVolume(sym) {
+      const d = data[sym];
+      const vols = d.volumes;
+      const period = CONFIG.volPeriod;
+      
+      if (vols.length < period) {
+        d.volAvg = vols.reduce((a,b)=>a+b,0)/vols.length;
+      } else {
+        d.volAvg = vols.slice(-period).reduce((a,b)=>a+b,0)/period;
+      }
+            d.volRatio = d.volAvg > 0 ? vols[vols.length-1] / d.volAvg : 1;
+    }
+
+    function updateSignal(sym) {
+      const d = data[sym];
+      let score = 0;
+
+      // 1. CVD (Order Flow)
+      score += d.cvd > 0 ? 1.5 : -1.5;
+
+      // 2. VWAP (Trend Filter)
+      score += d.price > d.vwap ? 1.5 : -1.5;
+
+      // 3. RSI (Momentum)
+      if (d.rsi < 30) score += 1;      // Oversold bounce potential
+      else if (d.rsi > 70) score -= 1; // Overbought reversal risk
+      else if (d.rsi > 45 && d.rsi < 55) score += 0.5; // Healthy momentum
+
+      // 4. Volume (Conviction)
+      if (d.volRatio > 1.5) score += 1;   // High conviction
+      else if (d.volRatio < 0.7) score -= 0.5; // Weak participation
+
+      d.score = score;
+      
+      if (score >= 3.5) d.signal = 'STRONG BUY';
+      else if (score >= 2) d.signal = 'BUY';
+      else if (score <= -3.5) d.signal = 'STRONG SELL';
+      else if (score <= -2) d.signal = 'SELL';
+      else d.signal = 'NEUTRAL';
+    }
+
+    function render() {
+      const container = document.getElementById('cards');
+      container.innerHTML = Object.entries(data).map(([sym, d]) => {
+        const rsiClass = d.rsi < 30 ? 'oversold' : d.rsi > 70 ? 'overbought' : 'neutral';
+        const rsiText = d.rsi < 30 ? 'OVERSOLD' : d.rsi > 70 ? 'OVERBOUGHT' : 'NEUTRAL';
+        const volWidth = Math.min(100, d.volRatio * 50);
+        const volColor = d.volRatio > 1.5 ? '#00ff88' : d.volRatio < 0.7 ? '#ff3366' : '#00d4ff';
+        const sigClass = d.signal.toLowerCase().replace(' ', '-');
+
+        return `
+          <div class="card">
+            <div class="row">
+              <div class="name">${sym}</div>
+              <div class="price ${d.price > d.vwap ? 'up' : 'down'}">$${d.price.toFixed(2)}</div>
+            </div>
+            <div class="grid">
+              <div class="box">
+                <div class="label">CVD</div>
+                <div class="value">${d.cvd.toFixed(2)}</div>              </div>
+              <div class="box">
+                <div class="label">VWAP</div>
+                <div class="value">$${d.vwap.toFixed(0)}</div>
+              </div>
+              <div class="box">
+                <div class="label">RSI (14)</div>
+                <div class="value" style="color:${rsiClass === 'oversold' ? '#00ff88' : rsiClass === 'overbought' ? '#ff3366' : '#e0e6ed'}">${d.rsi.toFixed(1)}</div>
+                <div class="rsi-zone ${rsiClass}">${rsiText}</div>
+              </div>
+              <div class="box">
+                <div class="label">VOL RATIO</div>
+                <div class="value">${d.volRatio.toFixed(2)}x</div>
+                <div class="vol-bar"><div class="vol-fill" style="width:${volWidth}%;background:${volColor}"></div></div>
+              </div>
+            </div>
+            <div class="signal ${sigClass}">${d.signal}</div>
+            <div style="text-align:center;font-size:0.75rem;color:#6b7280;margin-top:0.5rem">
+              Score: ${d.score.toFixed(1)} | Candles: ${d.closes.length}
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     async function fetchPrices() {
       try {
         const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');
         const prices = await res.json();
-        prices.forEach(p => {
-          if (data[p.symbol]) data[p.symbol].price = parseFloat(p.price);
-        });        render();
-      } catch (e) { console.error(e); }
-    }
-
-    function render() {
-      const container = document.getElementById('cards');
-      container.innerHTML = Object.entries(data).map(([sym, d]) => `
-        <div class="card">
-          <div class="row">
-            <div class="name">${sym}</div>
-            <div class="price ${d.price > d.vwap ? 'up' : 'down'}">$${d.price.toFixed(2)}</div>
-          </div>
-          <div class="grid">
-            <div class="box"><div class="label">CVD</div><div class="value">${d.cvd.toFixed(2)}</div></div>
-            <div class="box"><div class="label">VWAP</div><div class="value">$${d.vwap.toFixed(0)}</div></div>
-            <div class="box"><div class="label">Trades</div><div class="value">${d.trades}</div></div>
-            <div class="box"><div class="label">Score</div><div class="value">${d.score.toFixed(0)}</div></div>
-          </div>
-          <div class="signal ${d.signal.toLowerCase()}">${d.signal}</div>
-        </div>
-      `).join('');
+        prices.forEach(p => { if (data[p.symbol]) data[p.symbol].price = parseFloat(p.price); });
+        render();
+      } catch (e) { console.warn('REST fallback failed'); }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
