@@ -1,350 +1,891 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#050810">
-  <title>FUTURES SCALPER PRO</title>
-  <style>
-    :root{--bg:#050810;--card:#0a0f1c;--text:#e0e6ed;--muted:#6b7280;--border:#1e293b;--green:#00ff88;--red:#ff3366;--neon:#00d4ff;--orange:#ff9500;--purple:#b829dd}
-    *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,monospace;-webkit-tap-highlight-color:transparent}
-    body{background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
-    header{text-align:center;padding:1.5rem 1rem 1rem;background:var(--card);border-bottom:1px solid var(--border)}
-    .logo{font-size:1.6rem;font-weight:900;background:linear-gradient(90deg,var(--green),var(--neon));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
-    .subtitle{font-size:0.75rem;color:var(--muted);margin-top:0.3rem;letter-spacing:0.5px}
-    .status-bar{display:flex;justify-content:center;gap:0.8rem;margin-top:0.8rem}
-    .badge{padding:0.3rem 0.8rem;border-radius:20px;font-size:0.75rem;font-weight:700}
-    .badge.live{background:rgba(0,255,136,0.15);color:var(--green)}
-    .badge.chop{background:rgba(255,149,0,0.15);color:var(--orange)}
-    .badge.trend{background:rgba(0,212,255,0.15);color:var(--neon)}
-    .badge.squeeze{background:rgba(184,41,221,0.15);color:var(--purple)}
-    main{padding:1rem;max-width:600px;margin:0 auto}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem;margin-bottom:1.2rem;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
-    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--neon));opacity:0.5}
-    .header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
-    .symbol{font-size:1.2rem;font-weight:800;letter-spacing:0.5px}
-    .price{font-size:1.5rem;font-weight:800}
-    .price.up{color:var(--green)}.price.down{color:var(--red)}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem;margin-bottom:1rem}
-    .box{background:rgba(30,41,59,0.4);padding:0.6rem 0.4rem;border-radius:10px;text-align:center;border:1px solid rgba(30,41,59,0.6)}
-    .label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.2rem;letter-spacing:0.5px}
-    .value{font-size:0.95rem;font-weight:700;font-variant-numeric:tabular-nums}
-    .signal-box{padding:1rem;border-radius:12px;text-align:center;font-weight:900;font-size:1.1rem;border:2px solid;letter-spacing:1px;margin-bottom:1rem;transition:all 0.3s}
-    .signal-box.buy{background:rgba(0,255,136,0.1);color:var(--green);border-color:var(--green);box-shadow:0 0 20px rgba(0,255,136,0.1)}
-    .signal-box.sell{background:rgba(255,51,102,0.1);color:var(--red);border-color:var(--red);box-shadow:0 0 20px rgba(255,51,102,0.1)}
-    .signal-box.neutral{background:rgba(255,149,0,0.05);color:var(--orange);border-color:var(--orange)}
-    .signal-box.strong-buy{background:rgba(0,255,136,0.2);color:var(--green);border-color:var(--green);box-shadow:0 0 30px rgba(0,255,136,0.2);animation:pulse-green 2s infinite}
-    .signal-box.strong-sell{background:rgba(255,51,102,0.2);color:var(--red);border-color:var(--red);box-shadow:0 0 30px rgba(255,51,102,0.2);animation:pulse-red 2s infinite}
-    @keyframes pulse-green{0%{box-shadow:0 0 20px rgba(0,255,136,0.2)}50%{box-shadow:0 0 40px rgba(0,255,136,0.4)}100%{box-shadow:0 0 20px rgba(0,255,136,0.2)}}
-    @keyframes pulse-red{0%{box-shadow:0 0 20px rgba(255,51,102,0.2)}50%{box-shadow:0 0 40px rgba(255,51,102,0.4)}100%{box-shadow:0 0 20px rgba(255,51,102,0.2)}}
-    .stats-row{display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-top:0.5rem}
-    .confidence-bar{height:6px;background:#1e293b;border-radius:3px;margin-top:0.5rem;overflow:hidden}
-    .confidence-fill{height:100%;background:var(--neon);transition:width 0.5s ease}
-    .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,15,28,0.98);backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:0.8rem 0 calc(0.8rem + env(safe-area-inset-bottom));z-index:100}
-    .nav-item{text-align:center;font-size:0.7rem;color:var(--muted);cursor:pointer}
-    .nav-item.active{color:var(--neon)}
-    .nav-icon{font-size:1.2rem;margin-bottom:0.2rem}
-    .loading{text-align:center;padding:3rem;color:var(--muted)}
-  </style></head>
-<body>
-  <header>
-    <div class="logo"> FUTURES SCALPER PRO</div>
-    <div class="subtitle">INSTITUTIONAL STACK • BTC / XAUT • 1-5M</div>
-    <div class="status-bar">
-      <span class="badge" id="ws-badge">● OFFLINE</span>
-      <span class="badge chop" id="regime-badge">CHOP</span>
-    </div>
-  </header>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#08080B" />
+<title>PULSE — Micro-Sentiment Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#08080B;
+    --surface:#121218;
+    --elev:#1A1A22;
+    --line:#26262F;
+    --accent:#7C5CFF;
+    --accent-dim:#7C5CFF22;
+    --green:#00E08A;
+    --red:#FF4D6D;
+    --amber:#FFB020;
+    --blue:#3B9EFF;
+    --text:#ECECF1;
+    --muted:#7A7A88;
+    --muted2:#4A4A56;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --disp:'Space Grotesk',-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bot:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:var(--disp);
+    overscroll-behavior:none;
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  #app{
+    max-width:480px;margin:0 auto;height:100dvh;
+    display:flex;flex-direction:column;position:relative;
+    background:radial-gradient(120% 60% at 50% -10%, #16121f 0%, var(--bg) 55%);
+  }
 
-  <main id="container">
-    <div class="loading">Initializing Data Streams...</div>
-  </main>
+  /* ---- Top bar ---- */
+  .topbar{
+    padding:calc(var(--safe-top) + 14px) 18px 12px;
+    display:flex;align-items:center;justify-content:space-between;
+    flex:0 0 auto;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{
+    width:30px;height:30px;border-radius:9px;
+    background:linear-gradient(135deg,var(--accent),#B89BFF);
+    display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff;
+    box-shadow:0 0 18px var(--accent-dim);
+  }
+  .brand h1{font-size:17px;font-weight:600;letter-spacing:.5px;margin:0;}
+  .brand .sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:1px;}
+  .status{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);transition:.3s;}
+  .dot.live{background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite;}
+  .dot.err{background:var(--red);box-shadow:0 0 10px var(--red);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .gear{background:none;border:none;color:var(--muted);font-size:18px;padding:6px;cursor:pointer;}
+
+  /* ---- Tape ---- */
+  .tape{
+    flex:0 0 auto;display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;
+    padding:6px 18px 12px;border-bottom:1px solid var(--line);
+  }
+  .tape::-webkit-scrollbar{display:none;}
+  .tape-item{flex:0 0 auto;display:flex;flex-direction:column;gap:1px;}
+  .tape-sym{font-size:10px;color:var(--muted);letter-spacing:1px;}
+  .tape-px{font-family:var(--mono);font-size:13px;font-weight:500;}
+  .tape-chg{font-family:var(--mono);font-size:10px;}
+  .up{color:var(--green);} .down{color:var(--red);}
+
+  /* ---- Scroll body ---- */
+  .body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 90px;scrollbar-width:none;}
+  .body::-webkit-scrollbar{display:none;}
+  .view{display:none;} .view.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .eyebrow{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin:2px 4px 12px;}
+
+  /* ---- Market cards ---- */
+  .mcard{
+    background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:16px;margin-bottom:12px;position:relative;overflow:hidden;
+  }
+  .mcard .row1{display:flex;align-items:flex-start;justify-content:space-between;}
+  .mcard .name{display:flex;align-items:center;gap:10px;}
+  .coin{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;}
+  .mcard .sym{font-size:15px;font-weight:600;}
+  .mcard .pair{font-size:10px;color:var(--muted);font-family:var(--mono);}
+  .mcard .px{font-family:var(--mono);font-size:20px;font-weight:600;text-align:right;}
+  .mcard .chg{font-family:var(--mono);font-size:12px;text-align:right;margin-top:2px;}
+  .spark{width:100%;height:46px;margin:14px 0 12px;display:block;}
+  .metrics{display:flex;gap:8px;}
+  .metric{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:9px 10px;}
+  .metric .k{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .metric .v{font-family:var(--mono);font-size:13px;font-weight:500;margin-top:3px;}
+  .badge{display:inline-block;font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:6px;letter-spacing:.5px;}
+  .b-trend{background:#3B9EFF1f;color:var(--blue);}
+  .b-squeeze{background:#FFB0201f;color:var(--amber);}
+  .b-expansion{background:#FF4D6D1f;color:var(--red);}
+
+  /* ---- Filter chips ---- */
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 0 14px;padding-bottom:2px;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;background:var(--surface);border:1px solid var(--line);color:var(--muted);
+    font-family:var(--mono);font-size:11px;padding:7px 13px;border-radius:20px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:.15s;
+  }
+  .chip .cd{width:7px;height:7px;border-radius:50%;}
+  .chip.on{color:var(--text);border-color:var(--accent);background:var(--accent-dim);}
+
+  /* ---- Alerts ---- */
+  .alert{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px 13px 16px;margin-bottom:10px;position:relative;overflow:hidden;
+    animation:slidein .3s ease;
+  }
+  @keyframes slidein{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+  .alert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--muted2);}
+  .alert.critical::before{background:var(--red);}
+  .alert.macro::before{background:var(--amber);}
+  .alert.flow::before{background:var(--blue);}
+  .alert .ahead{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+  .alert .atitle{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;}
+  .alert.critical .atitle{color:var(--red);}
+  .alert.macro .atitle{color:var(--amber);}
+  .alert.flow .atitle{color:var(--blue);}
+  .alert .atime{font-family:var(--mono);font-size:10px;color:var(--muted2);}
+  .alert .abody{font-size:13px;color:#C8C8D2;line-height:1.45;}
+
+  /* ---- News / odds ---- */
+  .news{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;}
+  .news .nsrc{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+  .news .nsource{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .news .ntime{font-family:var(--mono);font-size:10px;color:var(--muted2);}
+  .news .ntitle{font-size:14px;line-height:1.4;color:var(--text);}
+  .news .votes{display:flex;gap:12px;margin-top:9px;font-family:var(--mono);font-size:11px;}
+
+  .odds{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;}
+  .odds .q{font-size:14px;line-height:1.4;margin-bottom:11px;}
+  .obar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden;display:flex;}
+  .obar .yes{background:var(--green);} .obar .no{background:var(--red);}
+  .ometa{display:flex;justify-content:space-between;margin-top:8px;font-family:var(--mono);font-size:11px;}
+  .ometa .yespct{color:var(--green);} .ometa .vol{color:var(--muted);}
+
+  /* ---- Empty state ---- */
+  .empty{text-align:center;padding:48px 24px;}
+  .empty .ico{font-size:34px;margin-bottom:14px;opacity:.6;}
+  .empty h3{font-size:16px;font-weight:600;margin:0 0 8px;}
+  .empty p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 18px;}
+  .empty .cta{
+    background:var(--accent);color:#fff;border:none;font-family:var(--disp);font-weight:600;font-size:14px;
+    padding:12px 22px;border-radius:12px;cursor:pointer;
+  }
+
+  /* ---- Bottom nav ---- */
+  .nav{
+    position:absolute;left:0;right:0;bottom:0;
+    padding:8px 12px calc(var(--safe-bot) + 8px);
+    display:flex;justify-content:space-around;
+    background:rgba(10,10,14,.82);backdrop-filter:blur(18px);
+    border-top:1px solid var(--line);
+  }
+  .navbtn{
+    background:none;border:none;color:var(--muted2);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-family:var(--mono);font-size:9px;letter-spacing:.3px;padding:6px 9px;border-radius:10px;transition:.15s;
+  }
+  .navbtn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;}
+  .navbtn.on{color:var(--accent);}
+  .navcount{
+    position:absolute;top:2px;margin-left:16px;background:var(--red);color:#fff;
+    font-size:8px;font-family:var(--mono);min-width:15px;height:15px;border-radius:8px;
+    display:grid;place-items:center;padding:0 3px;
+  }
+
+  /* ---- Settings sheet ---- */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.25s;z-index:40;}
+  .sheet-bg.show{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;z-index:41;
+    background:var(--elev);border-radius:24px 24px 0 0;border-top:1px solid var(--line);
+    padding:20px 20px calc(var(--safe-bot) + 24px);
+    transform:translateY(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);
+  }
+  .sheet.show{transform:translateY(0);}
+  .sheet .grab{width:38px;height:4px;border-radius:2px;background:var(--muted2);margin:0 auto 18px;}
+  .sheet h2{font-size:17px;margin:0 0 4px;}
+  .sheet .desc{font-size:12px;color:var(--muted);margin:0 0 18px;line-height:1.5;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+  .field input{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;
+    color:var(--text);font-family:var(--mono);font-size:13px;padding:12px 13px;outline:none;
+  }
+  .field input:focus{border-color:var(--accent);}
+  .savebtn{width:100%;background:var(--accent);color:#fff;border:none;font-family:var(--disp);font-weight:600;font-size:15px;padding:14px;border-radius:13px;cursor:pointer;margin-top:4px;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* ---- Setup analyser ---- */
+  .verdict{border-radius:18px;padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:16px;border:1px solid var(--line);}
+  .verdict.go{background:linear-gradient(135deg,#00E08A18,var(--surface));border-color:#00E08A55;}
+  .verdict.no{background:var(--surface);}
+  .ring{flex:0 0 auto;width:74px;height:74px;position:relative;}
+  .ring svg{transform:rotate(-90deg);} 
+  .ring .score{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:20px;font-weight:700;}
+  .vmeta{flex:1;}
+  .biaspill{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;padding:4px 11px;border-radius:8px;margin-bottom:6px;}
+  .bias-long{background:#00E08A1f;color:var(--green);}
+  .bias-short{background:#FF4D6D1f;color:var(--red);}
+  .bias-none{background:#7A7A8822;color:var(--muted);}
+  .vmeta .vline{font-size:12px;color:var(--muted);line-height:1.45;}
+  .vmeta .vline b{color:var(--text);font-weight:600;}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;}
+  .panel h4{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  .cbar{margin-bottom:10px;}
+  .cbar .ct{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .cbar .ct .pts{font-family:var(--mono);color:var(--muted);}
+  .cbar .track{height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+  .cbar .fill{height:100%;border-radius:3px;background:var(--accent);}
+  .cbar.full .fill{background:var(--green);}
+  .cbar.zero .fill{background:var(--muted2);}
+  .lvlrow,.planrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .lvlrow:last-child,.planrow:last-child{border-bottom:none;}
+  .lvlrow .lk{color:var(--muted);} .lvlrow .lv,.planrow .pv{font-family:var(--mono);font-weight:500;}
+  .planrow .pk{color:var(--muted);display:flex;align-items:center;gap:7px;}
+  .planrow .tag{width:3px;height:14px;border-radius:2px;}
+  .rr{font-family:var(--mono);font-size:12px;}
+  .disclaim{font-size:11px;color:var(--muted2);line-height:1.5;text-align:center;padding:4px 10px 0;}
+  .refresh{width:100%;background:var(--elev);border:1px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:12px;padding:11px;border-radius:12px;margin-top:2px;cursor:pointer;}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">P</div>
+      <div>
+        <h1>PULSE</h1>
+        <div class="sub">Micro-Sentiment</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="status"><span class="dot" id="dot"></span><span id="statustxt">connecting</span></div>
+      <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div class="tape" id="tape"></div>
+
+  <div class="body">
+    <!-- MARKETS -->
+    <section class="view active" id="v-markets">
+      <div class="eyebrow">Live markets</div>
+      <div id="marketList"></div>
+    </section>
+
+    <!-- FLOW -->
+    <section class="view" id="v-flow">
+      <div class="eyebrow">Order-flow signals</div>
+      <div class="chips" id="flowChips">
+        <div class="chip on" data-f="all">ALL</div>
+        <div class="chip" data-f="critical"><span class="cd" style="background:var(--red)"></span>CRITICAL</div>
+        <div class="chip" data-f="macro"><span class="cd" style="background:var(--amber)"></span>MACRO</div>
+        <div class="chip" data-f="flow"><span class="cd" style="background:var(--blue)"></span>FLOW</div>
+      </div>
+      <div id="alertList"></div>
+    </section>
+
+    <!-- NEWS -->
+    <section class="view" id="v-news">
+      <div class="eyebrow">Headlines</div>
+      <div id="newsList"></div>
+    </section>
+
+    <!-- ODDS -->
+    <section class="view" id="v-odds">
+      <div class="eyebrow">Prediction-market odds</div>
+      <div id="oddsList"></div>
+    </section>
+
+    <!-- SETUP -->
+    <section class="view" id="v-setup">
+      <div class="eyebrow">Setup analyser — structure &amp; confluence</div>
+      <div class="chips" id="setupSyms"></div>
+      <div class="chips" id="setupModes">
+        <div class="chip on" data-m="scalp">SCALP · 5m / 1h</div>
+        <div class="chip" data-m="intraday">INTRADAY · 15m / 4h</div>
+      </div>
+      <div id="setupOut"></div>
+    </section>
+  </div>
 
   <nav class="nav">
-    <div class="nav-item active"><div class="nav-icon">📊</div>Signals</div>
-    <div class="nav-item"><div class="nav-icon">📝</div>Trades</div>
-    <div class="nav-item"><div class="nav-icon">ℹ️</div>Info</div>
+    <button class="navbtn on" data-v="markets">
+      <svg viewBox="0 0 24 24"><path d="M3 13h4l3-8 4 16 3-8h4"/></svg>MARKETS
+    </button>
+    <button class="navbtn" data-v="flow">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/></svg>
+      <span class="navcount" id="flowCount" style="display:none">0</span>FLOW
+    </button>
+    <button class="navbtn" data-v="news">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>NEWS
+    </button>
+    <button class="navbtn" data-v="odds">
+      <svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 8v8l7 5 7-5V8"/></svg>ODDS
+    </button>
+    <button class="navbtn" data-v="setup">
+      <svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 9-9M21 7v5M21 7h-5"/></svg>SETUP
+    </button>
   </nav>
+</div>
 
-  <script>
-    // ================= CONFIGURATION =================
-    const CONFIG = {
-      assets: [
-        { symbol: 'BTCUSDT', name: 'Bitcoin', ws: 'btcusdt@trade', rest: 'https://fapi.binance.com/fapi/v1' },
-        { symbol: 'XAUTUSD', name: 'Gold', ws: null, simulated: true }
-      ],
-      thresholds: {
-        baseBuy: 4.0, baseSell: -4.0, strongBuy: 7.0, strongSell: -7.0,
-        minVol: 1.2, minCVD: 5.0
-      },
-      updateFreq: 1000
-    };
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h2>Terminal settings</h2>
+  <p class="desc">Live market flow runs over Binance's public WebSocket — no setup needed. To turn on News and Odds, paste the URL of your data proxy (the Cloudflare Worker).</p>
+  <div class="field">
+    <label>Proxy base URL</label>
+    <input id="proxyInput" type="url" inputmode="url" placeholder="https://your-worker.workers.dev" />
+  </div>
+  <div class="field">
+    <label>Spike threshold — % in 2s</label>
+    <input id="spikeInput" type="number" step="0.01" placeholder="0.15" />
+  </div>
+  <div class="field">
+    <label>CVD alert — net USD flow in 10s</label>
+    <input id="cvdInput" type="number" step="1000" placeholder="25000" />
+  </div>
+  <button class="savebtn" id="saveBtn">Save settings</button>
+</div>
 
-    // ================= STATE MANAGEMENT =================
-    let state = {
-      ws: null, msgCount: 0, globalRegime: 'CHOP',
-      data: {}, trades: []
-    };
+<script>
+/* ============================================================
+   PULSE — standalone micro-sentiment terminal
+   Live flow: Binance public WS (no CORS, no backend).
+   News + Odds: optional proxy (Cloudflare Worker).
+   ============================================================ */
 
-    // Initialize Data Structures
-    CONFIG.assets.forEach(a => {
-      state.data[a.symbol] = {
-        price: a.symbol === 'BTCUSDT' ? 65000 : 2650,
-        cvd: 0, trades: 0, vwap: 0, cumVP: 0, cumV: 0,
-        oi: 0, prevOI: 0, oiDelta: 0, funding: 0,
-        volRatio: 1, rsi: 50,
-        liqProx: 1.0, regime: 'CHOP',
-        score: 0, signal: 'NEUTRAL', conf: 0,        vm: 1.0, // Volume Multiplier
-        indicators: { cvd:0, oi:0, liq:0, fund:0, vpin:0, mom:0 },
-        lastUpdate: Date.now(), cvdHist: []
-      };
-    });
+const SYMBOLS = [
+  { id:'btcusdt', sym:'BTC', name:'Bitcoin',  color:'#F7931A' },
+  { id:'ethusdt', sym:'ETH', name:'Ethereum', color:'#627EEA' },
+  { id:'solusdt', sym:'SOL', name:'Solana',   color:'#14F195' },
+  { id:'bnbusdt', sym:'BNB', name:'BNB',      color:'#F0B90B' },
+  { id:'dogeusdt',sym:'DOGE',name:'Dogecoin', color:'#C2A633' },
+  { id:'xrpusdt', sym:'XRP', name:'XRP',       color:'#00B8D4' },
+];
 
-    // ================= DATA LAYER =================
-    function init() {
-      console.log('🚀 Starting Futures Scalper Pro...');
-      render();
-      
-      // Start BTC WebSocket
-      const btcAsset = CONFIG.assets[0];
-      const url = `wss://fstream.binance.com/ws/${btcAsset.ws}`;
-      state.ws = new WebSocket(url);
+/* ---- persisted settings (degrade gracefully if storage blocked) ---- */
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:v; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+const CFG = {
+  proxy: store.get('pulse_proxy',''),
+  spikePct: parseFloat(store.get('pulse_spike','0.15')),
+  cvdThresh: parseFloat(store.get('pulse_cvd','25000')),
+};
 
-      state.ws.onopen = () => {
-        document.getElementById('ws-badge').className = 'badge live';
-        document.getElementById('ws-badge').textContent = '● LIVE';
-        console.log('✅ BTC WebSocket Connected');
-        fetchRestData();
-        setInterval(fetchRestData, 15000);
-      };
+/* ---- per-symbol live state ---- */
+const state = {};
+SYMBOLS.forEach(s=>{
+  state[s.id] = {
+    price:null, prevTick:null, chg24:0,
+    priceBuf:[],            // {t, price} ring buffer for spike detection
+    sparkBuf:[],            // recent prices for the sparkline
+    cvd:0,                  // cumulative volume delta (session)
+    cvdWindow:[],           // {t, signedQty} rolling 10s window
+    regime:'TREND',
+    lastSpike:0, lastCvd:0, lastRegime:0,  // cooldown timestamps
+  };
+});
 
-      state.ws.onmessage = (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.e === 'trade') {
-            handleTrade('BTCUSDT', msg);
-          }
-        } catch (err) { console.error('BTC Parse:', err); }
-      };
+const alerts = [];          // {type, title, body, t, sym}
+let activeFilter = 'all';
 
-      state.ws.onclose = () => {
-        document.getElementById('ws-badge').textContent = '● RECONNECTING';
-        setTimeout(init, 3000);
-      };
-
-      // Start XAUT Simulation Loop
-      setInterval(simulateXAUT, 2000);
-      
-      // UI Loop
-      setInterval(render, CONFIG.updateFreq);
-    }
-
-    // Fetch OI and Funding for BTC
-    async function fetchRestData() {
-      try {
-        // Using a proxy or direct call (Binance Futures API usually allows GET)
-        const res = await fetch('https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT');        const data = await res.json();
-        const currentOI = parseFloat(data.openInterest);
-        state.data['BTCUSDT'].prevOI = state.data['BTCUSDT'].oi || currentOI;
-        state.data['BTCUSDT'].oi = currentOI;
-        state.data['BTCUSDT'].oiDelta = ((state.data['BTCUSDT'].oi - state.data['BTCUSDT'].prevOI) / state.data['BTCUSDT'].prevOI) * 100;
-        
-        // Simulate Funding slightly based on price action for demo stability
-        state.data['BTCUSDT'].funding = 0.01 + (Math.random() - 0.5) * 0.005;
-      } catch (e) {
-        console.warn('REST Fetch Failed (CORS or Network)', e);
+/* ============================================================
+   1. SEED SPARKLINES via REST klines (Binance REST = CORS-open)
+   ============================================================ */
+async function seedKlines(){
+  await Promise.all(SYMBOLS.map(async s=>{
+    try{
+      const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${s.sym}USDT&interval=1m&limit=60`);
+      const data = await r.json();
+      const closes = data.map(k=>parseFloat(k[4]));
+      state[s.id].sparkBuf = closes.slice(-60);
+      if(closes.length){
+        state[s.id].price = closes[closes.length-1];
+        const open = parseFloat(data[0][1]);
+        state[s.id].chg24 = open>0 ? ((closes[closes.length-1]-open)/open*100) : 0;
       }
+    }catch(e){ /* offline-friendly: WS will fill in */ }
+  }));
+  renderMarkets(); renderTape();
+}
+
+/* ============================================================
+   2. LIVE STREAM via Binance combined WebSocket
+   ============================================================ */
+let ws, reconnectT;
+function connectWS(){
+  const streams = SYMBOLS.map(s=>`${s.id}@aggTrade`).concat(SYMBOLS.map(s=>`${s.id}@ticker`)).join('/');
+  ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+  ws.onopen = ()=> setStatus('live','live');
+  ws.onclose = ()=>{ setStatus('err','reconnecting'); clearTimeout(reconnectT); reconnectT=setTimeout(connectWS,2500); };
+  ws.onerror = ()=> setStatus('err','error');
+
+  ws.onmessage = ev=>{
+    let msg; try{ msg=JSON.parse(ev.data); }catch(e){ return; }
+    const d = msg.data; if(!d) return;
+    const id = (d.s||'').toLowerCase();
+    if(!state[id]) return;
+
+    if(d.e === 'aggTrade')      handleTrade(id, d);
+    else if(d.e === '24hrTicker') handleTicker(id, d);
+  };
+}
+
+function handleTicker(id, d){
+  const st = state[id];
+  st.chg24 = parseFloat(d.P);          // 24h percent change
+  st.price = parseFloat(d.c);          // last price
+  renderTapeThrottled();
+}
+
+function handleTrade(id, d){
+  const st = state[id];
+  const px = parseFloat(d.p);
+  const qty = parseFloat(d.q);
+  const now = Date.now();
+
+  /* ---- price + spark ---- */
+  st.prevTick = st.price;
+  st.price = px;
+  st.sparkBuf.push(px); if(st.sparkBuf.length>60) st.sparkBuf.shift();
+
+  /* ---- ring buffer for spike (FIXED: null-safe, no divide-by-zero) ---- */
+  st.priceBuf.push({t:now, price:px});
+  while(st.priceBuf.length && now - st.priceBuf[0].t > 4000) st.priceBuf.shift();
+  const ref = st.priceBuf.find(p => now - p.t >= 2000);   // price ~2s ago
+  if(ref && ref.price > 0){                                 // guard baseline
+    const pct = (px - ref.price) / ref.price * 100;
+    if(Math.abs(pct) >= CFG.spikePct && now - st.lastSpike > 8000){
+      st.lastSpike = now;
+      fireAlert('critical',
+        `${st.sym}USDT PRICE SPIKE ${pct>0?'UP':'DOWN'}`,
+        `Moved ${pct.toFixed(2)}% in 2s. Volatility expanding.`, id);
     }
+  }
 
-    function handleTrade(sym, msg) {
-      const d = state.data[sym];
-      const price = parseFloat(msg.p);
-      const qty = parseFloat(msg.q);
-      const isMaker = msg.m; // true = seller initiated (red), false = buyer (green)
+  /* ---- CVD / delta (aggressor side, measured in notional USD) ---- */
+  const signed = (d.m ? -qty : qty) * px;   // m=true → buyer is maker → sell aggressor
+  st.cvd += signed;
+  st.cvdWindow.push({t:now, q:signed});
+  while(st.cvdWindow.length && now - st.cvdWindow[0].t > 10000) st.cvdWindow.shift();
+  const netDelta = st.cvdWindow.reduce((a,b)=>a+b.q,0);
+  if(Math.abs(netDelta) >= CFG.cvdThresh && now - st.lastCvd > 9000){
+    st.lastCvd = now;
+    fireAlert('flow',
+      `${st.sym}USDT CVD SHIFT`,
+      `Aggressive ${netDelta>0?'BUYING':'SELLING'} pressure. Delta ${netDelta>=0?'+':'-'}${fmtUSD(netDelta)} in 10s.`, id);
+  }
 
-      d.price = price;
-      d.trades++;
-      state.msgCount++;
-
-      // CVD Calc
-      d.cvd += isMaker ? -qty : qty;
-      
-      // VWAP Calc
-      d.cumVP += price * qty;
-      d.cumV += qty;
-      d.vwap = d.cumV > 0 ? d.cumVP / d.cumV : price;
-
-      // Update Engine
-      processEngine(sym);
+  /* ---- regime (volatility of recent returns) ---- */
+  if(st.sparkBuf.length>20 && now - st.lastRegime > 15000){
+    const rets=[];
+    for(let i=1;i<st.sparkBuf.length;i++){
+      const a=st.sparkBuf[i-1]; if(a>0) rets.push((st.sparkBuf[i]-a)/a);
     }
-
-    // Realistic XAUT Simulation (Gold Behavior)
-    function simulateXAUT() {
-      const d = state.data['XAUTUSD'];
-      const t = Date.now();
-      
-      // Gold moves slower, mean reverts
-      const noise = (Math.random() - 0.5) * 1.5;
-      const meanReversion = (2650 - d.price) * 0.002;
-      const newPrice = d.price + noise + meanReversion;
-      
-      const vol = 0.5 + Math.random();
-      const isBuy = Math.random() > 0.48; // Slightly bullish bias for gold usually
-
-      d.price = newPrice;
-      d.trades++;      d.cvd += isBuy ? vol : -vol;
-      d.cumVP += newPrice * vol;
-      d.cumV += vol;
-      d.vwap = d.cumV > 0 ? d.cumVP / d.cumV : newPrice;
-      
-      // Simulate OI changes
-      if (Math.random() > 0.8) {
-        d.prevOI = d.oi;
-        d.oi = d.oi * (1 + (Math.random() - 0.5) * 0.01);
-        d.oiDelta = ((d.oi - d.prevOI) / d.prevOI) * 100;
-      }
-      d.funding = 0.005 + (Math.random() * 0.002);
-
-      processEngine('XAUTUSD');
+    const mean=rets.reduce((x,y)=>x+y,0)/rets.length;
+    const vol=Math.sqrt(rets.reduce((x,y)=>x+(y-mean)**2,0)/rets.length)*100;
+    const newReg = vol<0.04 ? 'SQUEEZE' : vol>0.12 ? 'EXPANSION' : 'TREND';
+    if(newReg !== st.regime){
+      st.regime = newReg; st.lastRegime = now;
+      fireAlert('macro',
+        `${st.sym}USDT REGIME SHIFT`,
+        `Structure changed to ${newReg}. Adjust scalping approach.`, id);
     }
+  }
 
-    // ================= THE ENGINE =================
-    function processEngine(sym) {
-      const d = state.data[sym];
-      
-      // 1. Volume Ratio (Simplified for this scope)
-      d.volRatio = 1.0 + Math.random() * 0.5; // Simulated volume variation
-      if (sym === 'BTCUSDT' && d.trades > 0) {
-         // Simple volume calc based on recent trade frequency
-         d.volRatio = Math.max(0.5, (d.trades % 100) / 50); 
-      }
+  renderMarketsThrottled();
+}
 
-      // 2. Liquidation Proximity (Estimation based on price vs VWAP distance)
-      // If price is far from VWAP, liquidation risk is higher
-      const distFromVwap = Math.abs(d.price - d.vwap) / d.price;
-      d.liqProx = distFromVwap > 0.005 ? 0.3 : 1.5; // 0.3% is close/dangerous
+/* ============================================================
+   3. ALERT ENGINE
+   ============================================================ */
+function fireAlert(type, title, body, sym){
+  alerts.unshift({type, title, body, sym, t:Date.now()});
+  if(alerts.length>120) alerts.pop();
+  renderAlerts();
+  const flowView = document.getElementById('v-flow');
+  if(!flowView.classList.contains('active')){
+    const c=document.getElementById('flowCount');
+    const n=(parseInt(c.textContent)||0)+1;
+    c.textContent=n>99?'99':n; c.style.display='grid';
+  }
+}
 
-      // 3. VPIN / Toxicity Approximation (Based on CVD acceleration)
-      const cvdChange = d.cvd - (d.cvdHist.length > 0 ? d.cvdHist[d.cvdHist.length-1] : d.cvd);
-      d.cvdHist.push(d.cvd);
-      if(d.cvdHist.length > 5) d.cvdHist.shift();
-      
-      const toxicity = Math.abs(cvdChange) > 2 ? 1.5 : Math.abs(cvdChange) > 0.5 ? 0.5 : 0;
-      d.indicators.vpin = cvdChange > 0 ? toxicity : -toxicity;
+/* ============================================================
+   4. RENDERING
+   ============================================================ */
+function fmtPx(n){
+  if(n==null) return '—';
+  if(n>=1000) return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(n>=1)    return n.toFixed(2);
+  return n.toFixed(4);
+}
+function fmtUSD(n){
+  const a=Math.abs(n);
+  if(a>=1e9) return '$'+(a/1e9).toFixed(2)+'B';
+  if(a>=1e6) return '$'+(a/1e6).toFixed(2)+'M';
+  if(a>=1e3) return '$'+(a/1e3).toFixed(1)+'k';
+  return '$'+a.toFixed(0);
+}
+function timeAgo(t){
+  const s=Math.floor((Date.now()-t)/1000);
+  if(s<60) return s+'s';
+  const m=Math.floor(s/60); if(m<60) return m+'m';
+  return Math.floor(m/60)+'h';
+}
+function sparkPath(buf,w,h){
+  if(buf.length<2) return '';
+  const min=Math.min(...buf), max=Math.max(...buf), range=(max-min)||1;
+  return buf.map((v,i)=>{
+    const x=(i/(buf.length-1))*w;
+    const y=h-((v-min)/range)*h;
+    return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+  }).join(' ');
+}
 
-      // 4. Momentum (CVD Trend)
-      d.indicators.mom = d.cvdHist.length > 2 ? (d.cvd - d.cvdHist[0]) : 0;
+function renderTape(){
+  document.getElementById('tape').innerHTML = SYMBOLS.map(s=>{
+    const st=state[s.id]; const up=st.chg24>=0;
+    return `<div class="tape-item">
+      <span class="tape-sym">${s.sym}</span>
+      <span class="tape-px">$${fmtPx(st.price)}</span>
+      <span class="tape-chg ${up?'up':'down'}">${up?'+':''}${st.chg24.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+}
 
-      // 5. INDIVIDUAL SCORES
-      const s = d.indicators;
-      
-      // CVD Score
-      s.cvd = Math.abs(d.cvd) > 50 ? (d.cvd>0?2:-2) : Math.abs(d.cvd)>10?(d.cvd>0?1.5:-1.5) : (d.cvd>0?0.5:-0.5);
-      
-      // OI Score      s.oi = d.oiDelta > 1 ? 1.5 : d.oiDelta < -1 ? -1.5 : 0;
-      
-      // Liq Score
-      s.liq = d.liqProx < 0.5 ? (d.cvd>0?-1.5:1.5) : 0.5; // Danger zone reverses signal weight
-      
-      // Funding Score
-      s.fund = d.funding > 0.01 ? -1 : d.funding < 0 ? 1 : 0;
+function renderMarkets(){
+  document.getElementById('marketList').innerHTML = SYMBOLS.map(s=>{
+    const st=state[s.id]; const up=st.chg24>=0;
+    const netDelta = st.cvdWindow.reduce((a,b)=>a+b.q,0);
+    const dUp = netDelta>=0;
+    const regClass = st.regime==='SQUEEZE'?'b-squeeze':st.regime==='EXPANSION'?'b-expansion':'b-trend';
+    const path = sparkPath(st.sparkBuf,300,46);
+    const col = up?'var(--green)':'var(--red)';
+    return `<div class="mcard">
+      <div class="row1">
+        <div class="name">
+          <div class="coin" style="background:${s.color}22;color:${s.color}">${s.sym[0]}</div>
+          <div><div class="sym">${s.name}</div><div class="pair">${s.sym}/USDT</div></div>
+        </div>
+        <div><div class="px">$${fmtPx(st.price)}</div>
+          <div class="chg ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(st.chg24).toFixed(2)}%</div></div>
+      </div>
+      <svg class="spark" viewBox="0 0 300 46" preserveAspectRatio="none">
+        <path d="${path}" stroke="${col}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="metrics">
+        <div class="metric"><div class="k">Regime</div><div class="v"><span class="badge ${regClass}">${st.regime}</span></div></div>
+        <div class="metric"><div class="k">Delta 10s</div><div class="v ${dUp?'up':'down'}">${netDelta>=0?'+':'-'}${fmtUSD(netDelta)}</div></div>
+        <div class="metric"><div class="k">CVD</div><div class="v ${st.cvd>=0?'up':'down'}">${st.cvd>=0?'+':'-'}${fmtUSD(st.cvd)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-      // 6. DYNAMIC VOLUME MULTIPLIER
-      let vm = 1.0;
-      let confBoost = 0;
-      if (d.volRatio > 1.8) { vm=0.6; confBoost=20; } // High vol = easy trigger
-      else if (d.volRatio > 1.2) { vm=0.8; confBoost=10; }
-      else if (d.volRatio < 0.8) { vm=1.5; confBoost=-20; } // Low vol = hard trigger
+function renderAlerts(){
+  const list = activeFilter==='all' ? alerts : alerts.filter(a=>a.type===activeFilter);
+  const el = document.getElementById('alertList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty"><div class="ico">📡</div><h3>Listening to the tape</h3>
+      <p>Signals appear here as flow, volatility, and regime shifts fire across your watchlist.</p></div>`;
+    return;
+  }
+  el.innerHTML = list.slice(0,80).map(a=>`
+    <div class="alert ${a.type}">
+      <div class="ahead"><span class="atitle">${a.title}</span><span class="atime">${timeAgo(a.t)}</span></div>
+      <div class="abody">${a.body}</div>
+    </div>`).join('');
+}
 
-      d.vm = vm;
+/* throttle hot paths */
+let mT,tT;
+function renderMarketsThrottled(){ if(mT)return; mT=setTimeout(()=>{mT=null; if(document.getElementById('v-markets').classList.contains('active')) renderMarkets();},500); }
+function renderTapeThrottled(){ if(tT)return; tT=setTimeout(()=>{tT=null; renderTape();},700); }
 
-      // 7. COMPOSITE SCORE
-      const raw = (s.cvd*2.0) + (s.oi*1.5) + (s.liq*1.5) + (s.fund*1.0) + (s.mom*1.5);
-      d.score = raw;
+/* ============================================================
+   5. NEWS + ODDS (via optional proxy)
+   ============================================================ */
+async function loadNews(){
+  const el=document.getElementById('newsList');
+  if(!CFG.proxy){ el.innerHTML=proxyEmpty('News needs your data proxy','Headlines come from free sources (CryptoPanic, RSS) through the Worker. Add its URL in settings.'); return; }
+  el.innerHTML=`<div class="empty"><div class="ico">⏳</div><p>Loading headlines…</p></div>`;
+  try{
+    const r=await fetch(`${CFG.proxy}/news`); const items=await r.json();
+    el.innerHTML = (items||[]).slice(0,40).map(n=>`
+      <div class="news">
+        <div class="nsrc"><span class="nsource">${n.source||'news'}</span><span class="ntime">${n.time||''}</span></div>
+        <div class="ntitle">${n.title||''}</div>
+        ${n.bullish!=null?`<div class="votes"><span class="up">▲ ${n.bullish||0}</span><span class="down">▼ ${n.bearish||0}</span></div>`:''}
+      </div>`).join('') || proxyEmpty('No headlines','The proxy returned nothing. Check the Worker logs.');
+  }catch(e){ el.innerHTML=proxyEmpty('Couldn’t reach the proxy',`Tried ${CFG.proxy}/news. Confirm the URL and that the Worker is deployed.`); }
+}
+async function loadOdds(){
+  const el=document.getElementById('oddsList');
+  if(!CFG.proxy){ el.innerHTML=proxyEmpty('Odds need your data proxy','Polymarket odds are read from the public Gamma API through the Worker. Add its URL in settings.'); return; }
+  el.innerHTML=`<div class="empty"><div class="ico">⏳</div><p>Loading markets…</p></div>`;
+  try{
+    const r=await fetch(`${CFG.proxy}/polymarket`); const items=await r.json();
+    el.innerHTML = (items||[]).slice(0,30).map(m=>{
+      const yes=Math.round((m.yes||0)*100), no=100-yes;
+      return `<div class="odds">
+        <div class="q">${m.question||''}</div>
+        <div class="obar"><div class="yes" style="width:${yes}%"></div><div class="no" style="width:${no}%"></div></div>
+        <div class="ometa"><span class="yespct">YES ${yes}%</span><span class="vol">$${(m.volume||0).toLocaleString()} vol</span></div>
+      </div>`;
+    }).join('') || proxyEmpty('No markets','The proxy returned nothing.');
+  }catch(e){ el.innerHTML=proxyEmpty('Couldn’t reach the proxy',`Tried ${CFG.proxy}/polymarket. Confirm the URL and that the Worker is deployed.`); }
+}
+function proxyEmpty(h,p){ return `<div class="empty"><div class="ico">🔌</div><h3>${h}</h3><p>${p}</p><button class="cta" onclick="openSheet()">Open settings</button></div>`; }
 
-      // 8. SIGNAL GENERATION
-      const buyThresh = CONFIG.thresholds.baseBuy * vm;
-      const sellThresh = CONFIG.thresholds.baseSell * vm;
-      
-      if (raw >= CONFIG.thresholds.strongBuy * vm) { d.signal = 'STRONG BUY 🔥'; d.sigClass = 'strong-buy'; }
-      else if (raw >= buyThresh) { d.signal = 'BUY'; d.sigClass = 'buy'; }
-      else if (raw <= CONFIG.thresholds.strongSell * vm) { d.signal = 'STRONG SELL 🔥'; d.sigClass = 'strong-sell'; }
-      else if (raw <= sellThresh) { d.signal = 'SELL'; d.sigClass = 'sell'; }
-      else { d.signal = 'NEUTRAL'; d.sigClass = 'neutral'; }
+/* ============================================================
+   6. UI WIRING
+   ============================================================ */
+function setStatus(cls,txt){
+  const d=document.getElementById('dot'); d.className='dot '+(cls==='live'?'live':cls==='err'?'err':'');
+  document.getElementById('statustxt').textContent=txt;
+}
+document.querySelectorAll('.navbtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const v=b.dataset.v;
+    document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('on',x===b));
+    document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
+    document.querySelector('.body').scrollTop=0;
+    if(v==='flow'){ const c=document.getElementById('flowCount'); c.style.display='none'; c.textContent='0'; }
+    if(v==='news') loadNews();
+    if(v==='odds') loadOdds();
+    if(v==='markets') renderMarkets();
+    if(v==='setup') runSetup();
+  });
+});
+document.querySelectorAll('#flowChips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#flowChips .chip').forEach(x=>x.classList.toggle('on',x===c));
+    activeFilter=c.dataset.f; renderAlerts();
+  });
+});
 
-      // 9. CONFIDENCE
-      d.conf = Math.max(0, Math.min(100, (Math.abs(raw)/10)*100 + confBoost));
+/* settings sheet */
+function openSheet(){
+  document.getElementById('proxyInput').value=CFG.proxy;
+  document.getElementById('spikeInput').value=CFG.spikePct;
+  document.getElementById('cvdInput').value=CFG.cvdThresh;
+  document.getElementById('sheetBg').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+function closeSheet(){ document.getElementById('sheetBg').classList.remove('show'); document.getElementById('sheet').classList.remove('show'); }
+document.getElementById('gearBtn').addEventListener('click',openSheet);
+document.getElementById('sheetBg').addEventListener('click',closeSheet);
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  CFG.proxy=document.getElementById('proxyInput').value.trim().replace(/\/$/,'');
+  CFG.spikePct=parseFloat(document.getElementById('spikeInput').value)||0.15;
+  CFG.cvdThresh=parseFloat(document.getElementById('cvdInput').value)||25000;
+  store.set('pulse_proxy',CFG.proxy); store.set('pulse_spike',CFG.spikePct); store.set('pulse_cvd',CFG.cvdThresh);
+  closeSheet();
+  if(document.getElementById('v-news').classList.contains('active')) loadNews();
+  if(document.getElementById('v-odds').classList.contains('active')) loadOdds();
+});
 
-      // 10. REGIME
-      d.regime = d.volRatio > 1.5 ? 'TREND' : d.liqProx < 0.5 ? 'SQUEEZE' : 'CHOP';
-      d.lastUpdate = Date.now();
+/* refresh relative times */
+setInterval(()=>{ if(document.getElementById('v-flow').classList.contains('active')) renderAlerts(); },10000);
+
+/* ============================================================
+   7. SETUP ANALYSER — structure + confluence (an aid, not a predictor)
+   Reads market structure, finds levels, only counts a candlestick
+   pattern when it fires AT a level, scores confluence, and gates
+   the verdict on the 70% confidence rule.
+   ============================================================ */
+const SETUP = { sym:'btcusdt', mode:'scalp', built:false };
+const MODES = {
+  scalp:    { exec:'5m',  ctx:'1h' },
+  intraday: { exec:'15m', ctx:'4h' },
+};
+
+async function klines(sym, interval, limit=150){
+  const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym.toUpperCase()}&interval=${interval}&limit=${limit}`);
+  return (await r.json()).map(k=>({t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+}
+
+function swings(c,N=2){
+  const highs=[],lows=[];
+  for(let i=N;i<c.length-N;i++){
+    let ph=true,pl=true;
+    for(let j=1;j<=N;j++){
+      if(c[i].h<=c[i-j].h||c[i].h<=c[i+j].h) ph=false;
+      if(c[i].l>=c[i-j].l||c[i].l>=c[i+j].l) pl=false;
     }
+    if(ph) highs.push({i,p:c[i].h});
+    if(pl) lows.push({i,p:c[i].l});
+  }
+  return {highs,lows};
+}
+function trendOf(sw){
+  const h=sw.highs.slice(-2),l=sw.lows.slice(-2);
+  if(h.length<2||l.length<2) return 'RANGE';
+  const hUp=h[1].p>h[0].p,lUp=l[1].p>l[0].p;
+  if(hUp&&lUp) return 'UP'; if(!hUp&&!lUp) return 'DOWN'; return 'RANGE';
+}
+function levels(sw,price){
+  const pts=[...sw.highs,...sw.lows].map(x=>x.p).sort((a,b)=>a-b);
+  const zones=[];
+  for(const p of pts){
+    const z=zones.find(z=>Math.abs(p-z.mid)/z.mid<0.0018);
+    if(z){z.pts.push(p);z.mid=z.pts.reduce((a,b)=>a+b,0)/z.pts.length;}
+    else zones.push({mid:p,pts:[p]});
+  }
+  const res=zones.filter(z=>z.mid>price).sort((a,b)=>a.mid-b.mid)[0]||null;
+  const sup=zones.filter(z=>z.mid<price).sort((a,b)=>b.mid-a.mid)[0]||null;
+  return {res,sup};
+}
+function detectPattern(prev,last){
+  const body=Math.abs(last.c-last.o), range=(last.h-last.l)||1e-9;
+  const up=last.h-Math.max(last.c,last.o), dn=Math.min(last.c,last.o)-last.l;
+  const green=last.c>last.o, red=last.c<last.o, pBody=Math.abs(prev.c-prev.o);
+  if(green && prev.c<prev.o && last.c>=prev.o && last.o<=prev.c && body>pBody) return {name:'Bullish engulfing',dir:'long'};
+  if(red && prev.c>prev.o && last.o>=prev.c && last.c<=prev.o && body>pBody) return {name:'Bearish engulfing',dir:'short'};
+  if(dn>body*2 && dn>up*1.5 && body/range<0.4) return {name:'Hammer / bull rejection',dir:'long'};
+  if(up>body*2 && up>dn*1.5 && body/range<0.4) return {name:'Shooting star / bear rejection',dir:'short'};
+  return null;
+}
+function flowBias(c,sym){
+  const live=state[sym];
+  if(live && live.cvdWindow.length){
+    const nd=live.cvdWindow.reduce((a,b)=>a+b.q,0);
+    if(Math.abs(nd)>1) return nd>0?'long':'short';
+  }
+  let d=0; for(const k of c.slice(-6,-1)) d+=(k.c>=k.o?k.v:-k.v);
+  return d>0?'long':d<0?'short':'flat';
+}
 
-    // ================= UI RENDERER =================
-    function render() {
-      const container = document.getElementById('container');
-      const regimeBadge = document.getElementById('regime-badge');
-      
-      // Update Global Regime
-      const btcRegime = state.data['BTCUSDT'].regime;
-      regimeBadge.textContent = btcRegime;
-      regimeBadge.className = `badge ${btcRegime.toLowerCase()}`;
+function analyze(execC,ctxC,sym){
+  const price=execC[execC.length-1].c;
+  const swE=swings(execC), swC=swings(ctxC);
+  const trendE=trendOf(swE), trendC=trendOf(swC);
+  const lvl=levels(swE,price);
+  const pat=detectPattern(execC[execC.length-3],execC[execC.length-2]);
+  const flow=flowBias(execC,sym);
+  let dir = pat ? pat.dir : (trendE==='UP'?'long':trendE==='DOWN'?'short':null);
+  const nearSup=lvl.sup && Math.abs(price-lvl.sup.mid)/price<0.004;
+  const nearRes=lvl.res && Math.abs(price-lvl.res.mid)/price<0.004;
 
-      container.innerHTML = CONFIG.assets.map(a => {        const d = state.data[a.symbol];
-        if (!d) return '';
-        
-        const isUp = d.price > d.vwap;
-        const confColor = d.conf > 75 ? 'var(--green)' : d.conf > 40 ? 'var(--neon)' : 'var(--orange)';
-        
-        return `
-          <div class="card">
-            <div class="header-row">
-              <span class="symbol">${d.symbol}</span>
-              <span class="price ${isUp?'up':'down'}">$${d.price.toFixed(2)}</span>
-            </div>
-            
-            <div class="grid">
-              <div class="box">
-                <div class="label">CVD</div>
-                <div class="value" style="color:${d.cvd>0?'var(--green)':'var(--red)'}">${d.cvd.toFixed(2)}</div>
-              </div>
-              <div class="box">
-                <div class="label">OI Δ</div>
-                <div class="value" style="color:${d.oiDelta>0?'var(--green)':'var(--red)'}">${d.oiDelta.toFixed(2)}%</div>
-              </div>
-              <div class="box">
-                <div class="label">LIQ PROX</div>
-                <div class="value">${d.liqProx.toFixed(2)}%</div>
-              </div>
-              <div class="box">
-                <div class="label">FUNDING</div>
-                <div class="value" style="color:${d.funding>0.01?'var(--red)':'var(--green)'}">${(d.funding*100).toFixed(3)}%</div>
-              </div>
-              <div class="box">
-                <div class="label">VPIN</div>
-                <div class="value">${d.indicators.vpin.toFixed(1)}</div>
-              </div>
-              <div class="box">
-                <div class="label">VOL RATIO</div>
-                <div class="value">${d.volRatio.toFixed(2)}x</div>
-              </div>
-            </div>
+  let score=0; const parts=[];
+  if((dir==='long'&&trendC==='UP')||(dir==='short'&&trendC==='DOWN')){score+=25;parts.push(['Higher-TF trend aligned',25,25]);}
+  else if(trendC==='RANGE'){score+=10;parts.push(['Higher-TF ranging',10,25]);}
+  else parts.push(['Against higher-TF trend',0,25]);
 
-            <div class="signal-box ${d.sigClass}">${d.signal}</div>
-            
-            <div class="confidence-bar"><div class="confidence-fill" style="width:${d.conf}%;background:${confColor}"></div></div>
-            <div class="stats-row">
-              <span>Score: ${d.score.toFixed(1)} / VM: ${d.vm.toFixed(2)}</span>
-              <span>Confidence: ${d.conf.toFixed(0)}%</span>
-            </div>
-          </div>
-        `;
-      }).join('');    }
+  if(dir==='long'&&nearSup){score+=25;parts.push(['Price at support',25,25]);}
+  else if(dir==='short'&&nearRes){score+=25;parts.push(['Price at resistance',25,25]);}
+  else parts.push(['Not at a key level',0,25]);
 
-    // Start
-    window.addEventListener('DOMContentLoaded', init);
-  </script>
+  if(pat && ((pat.dir==='long'&&nearSup)||(pat.dir==='short'&&nearRes))){score+=20;parts.push([pat.name+' at level',20,20]);}
+  else if(pat){score+=8;parts.push([pat.name+' (mid-range)',8,20]);}
+  else parts.push(['No reversal pattern',0,20]);
+
+  if(dir && flow===dir){score+=15;parts.push(['Flow confirms',15,15]);}
+  else if(flow==='flat'){score+=5;parts.push(['Flow neutral',5,15]);}
+  else parts.push(['Flow against',0,15]);
+
+  if((dir==='long'&&trendE==='UP')||(dir==='short'&&trendE==='DOWN')){score+=15;parts.push(['Exec-TF structure agrees',15,15]);}
+  else parts.push(['Exec-TF structure mixed',0,15]);
+
+  let entry=price, sl=null, tp=null, rr=null;
+  if(dir==='long'){ sl=lvl.sup?lvl.sup.mid*0.999:price*0.995; tp=lvl.res?lvl.res.mid:price*1.01; rr=(tp-entry)/((entry-sl)||1e-9); }
+  else if(dir==='short'){ sl=lvl.res?lvl.res.mid*1.001:price*1.005; tp=lvl.sup?lvl.sup.mid:price*0.99; rr=(entry-tp)/((sl-entry)||1e-9); }
+
+  return {price,dir,score,parts,trendE,trendC,lvl,pat,flow,entry,sl,tp,rr};
+}
+
+function fmt(n){ return n==null?'—':'$'+fmtPx(n); }
+
+function renderSetup(a){
+  const out=document.getElementById('setupOut');
+  const meets = a.dir && a.score>=70 && a.rr!=null && a.rr>=1.5;
+  const biasCls = !a.dir?'bias-none':a.dir==='long'?'bias-long':'bias-short';
+  const biasTxt = !a.dir?'NO CLEAN SETUP':a.dir.toUpperCase();
+  const circ=2*Math.PI*32, off=circ*(1-a.score/100);
+  const ringCol = a.score>=70?'var(--green)':a.score>=45?'var(--amber)':'var(--muted2)';
+
+  const verdict = meets
+    ? `<b style="color:var(--green)">SETUP — meets your 70% filter.</b> Confirm the trigger candle closes, then size per your risk.`
+    : a.dir
+      ? `<b>STAND DOWN.</b> Confluence ${a.score}/100${a.rr!=null?`, R:R ${a.rr.toFixed(2)}`:''}. Below your 70% threshold — wait for a cleaner read.`
+      : `<b>STAND DOWN.</b> No structured setup right now — price isn't at a level with confirmation.`;
+
+  out.innerHTML = `
+    <div class="verdict ${meets?'go':'no'}">
+      <div class="ring">
+        <svg width="74" height="74"><circle cx="37" cy="37" r="32" stroke="var(--line)" stroke-width="6" fill="none"/>
+        <circle cx="37" cy="37" r="32" stroke="${ringCol}" stroke-width="6" fill="none" stroke-linecap="round"
+          stroke-dasharray="${circ}" stroke-dashoffset="${off}"/></svg>
+        <div class="score">${a.score}</div>
+      </div>
+      <div class="vmeta">
+        <span class="biaspill ${biasCls}">${biasTxt}</span>
+        <div class="vline">${verdict}</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h4>Confluence breakdown</h4>
+      ${a.parts.map(([label,pts,max])=>`
+        <div class="cbar ${pts===max?'full':pts===0?'zero':''}">
+          <div class="ct"><span>${label}</span><span class="pts">${pts}/${max}</span></div>
+          <div class="track"><div class="fill" style="width:${(pts/max*100)}%"></div></div>
+        </div>`).join('')}
+    </div>
+
+    <div class="panel">
+      <h4>Structure &amp; levels</h4>
+      <div class="lvlrow"><span class="lk">Higher-TF trend</span><span class="lv">${a.trendC}</span></div>
+      <div class="lvlrow"><span class="lk">Exec-TF trend</span><span class="lv">${a.trendE}</span></div>
+      <div class="lvlrow"><span class="lk">Flow (CVD)</span><span class="lv ${a.flow==='long'?'up':a.flow==='short'?'down':''}">${a.flow.toUpperCase()}</span></div>
+      <div class="lvlrow"><span class="lk">Nearest resistance</span><span class="lv">${a.lvl.res?fmt(a.lvl.res.mid):'—'}</span></div>
+      <div class="lvlrow"><span class="lk">Last price</span><span class="lv">${fmt(a.price)}</span></div>
+      <div class="lvlrow"><span class="lk">Nearest support</span><span class="lv">${a.lvl.sup?fmt(a.lvl.sup.mid):'—'}</span></div>
+    </div>
+
+    ${a.dir?`<div class="panel">
+      <h4>Trade plan ${a.dir==='long'?'(long)':'(short)'}</h4>
+      <div class="planrow"><span class="pk"><span class="tag" style="background:var(--accent)"></span>Entry zone</span><span class="pv">${fmt(a.entry)}</span></div>
+      <div class="planrow"><span class="pk"><span class="tag" style="background:var(--red)"></span>Invalidation (SL)</span><span class="pv">${fmt(a.sl)}</span></div>
+      <div class="planrow"><span class="pk"><span class="tag" style="background:var(--green)"></span>Target (TP)</span><span class="pv">${fmt(a.tp)}</span></div>
+      <div class="planrow"><span class="pk">Reward : Risk</span><span class="rr ${a.rr>=1.5?'up':'down'}">${a.rr!=null?a.rr.toFixed(2)+' : 1':'—'}</span></div>
+    </div>`:''}
+
+    <button class="refresh" onclick="runSetup()">↻ Re-analyse</button>
+    <p class="disclaim">Setup flag from price structure + flow — not a signal, not financial advice. The candle hasn't closed until it closes. You make the call.</p>
+  `;
+}
+
+async function runSetup(){
+  if(!SETUP.built){
+    document.getElementById('setupSyms').innerHTML = SYMBOLS.map((s,i)=>
+      `<div class="chip ${s.id===SETUP.sym?'on':''}" data-s="${s.id}">${s.sym}</div>`).join('');
+    document.querySelectorAll('#setupSyms .chip').forEach(c=>c.addEventListener('click',()=>{
+      SETUP.sym=c.dataset.s;
+      document.querySelectorAll('#setupSyms .chip').forEach(x=>x.classList.toggle('on',x===c));
+      runSetup();
+    }));
+    document.querySelectorAll('#setupModes .chip').forEach(c=>c.addEventListener('click',()=>{
+      SETUP.mode=c.dataset.m;
+      document.querySelectorAll('#setupModes .chip').forEach(x=>x.classList.toggle('on',x===c));
+      runSetup();
+    }));
+    SETUP.built=true;
+  }
+  const out=document.getElementById('setupOut');
+  out.innerHTML=`<div class="empty"><div class="ico">📐</div><p>Reading structure…</p></div>`;
+  try{
+    const m=MODES[SETUP.mode];
+    const [execC,ctxC]=await Promise.all([klines(SETUP.sym,m.exec),klines(SETUP.sym,m.ctx)]);
+    renderSetup(analyze(execC,ctxC,SETUP.sym));
+  }catch(e){
+    out.innerHTML=`<div class="empty"><div class="ico">⚠️</div><h3>Couldn’t load candles</h3><p>Binance REST may be blocked on this network. Try Wi-Fi, or tell me to switch the data source to Bybit.</p></div>`;
+  }
+}
+
+/* boot */
+renderMarkets(); renderTape(); renderAlerts();
+seedKlines();
+connectWS();
+</script>
 </body>
 </html>
